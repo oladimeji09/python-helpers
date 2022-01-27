@@ -22,22 +22,18 @@ SCOPES = ['https://mail.google.com/','https://www.googleapis.com/auth/drive','ht
 def main(service):
     """Use this for the different google api   """
     creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first time.
-    if os.path.exists(r'C:/Users/oolao/github/Projects/secrets/token.pickle'):
-        with open(r'C:/Users/oolao/github/Projects/secrets/token.pickle', 'rb') as token:
+    if os.path.exists(ph.root_fp+'creds/token.pickle'):
+        with open(ph.root_fp+'/creds/token.pickle', 'rb') as token:
             creds = pickle.load(token)
-    # creds.refresh(Request())
-    # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                r'C:/Users/oolao/github/Projects/secrets/client_secret.json', SCOPES)
+                ph.root_fp+'creds/client_secret.json', SCOPES)
             creds = flow.run_local_server()
         # Save the credentials for the next run
-        with open(r'C:/Users/oolao/github/Projects/secrets/token.pickle', 'wb') as token:
+        with open(ph.root_fp+'creds/token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     if service == 'gmail':
         v = 'v1'
@@ -46,7 +42,7 @@ def main(service):
     serviced = build(service, v, credentials=creds)
     return serviced
 
-def CreateMesssage(to,subject,message_text,cc='',bbc='',attachments=''):
+def CreateMessage(to,subject,message_text,cc='',bbc='',attachments=''):
       """Create Message object"""
       mimeMessage = MIMEMultipart()
       mimeMessage['to'] = to
@@ -187,7 +183,7 @@ def find_files(name):
             break
     return files
 
-def download_file(file_name,file_id,location =''):
+def download_file(file_name,file_id,location=''):
     """Download files using the file ID"""
     request = main('drive').files().get_media(fileId=file_id)
     fh = io.BytesIO()
@@ -197,6 +193,45 @@ def download_file(file_name,file_id,location =''):
         status, done = downloader.next_chunk()
         print("Download %d%%." % int(status.progress() * 100))
         fh.seek(0)
-        with open(os.path.join(location,file_name),'wb') as f:
+        with open(os.path.join(ph.root_fp+'working_files/'+location,file_name),'wb') as f:
             f.write(fh.read())
             f.close()
+
+def gspread_con():
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(ph.root_fp+'creds/svc-holmes.json', scope)
+    gc = gspread.authorize(credentials)
+    return gc
+
+def open_wb(id):
+    """ open workbook"""
+    wb = gspread_con().open_by_key(id)
+    return wb
+
+def num_to_col_letters(num):
+    """numbers to columns"""
+    letters = ''
+    while num:
+        mod = (num - 1) % 26
+        letters += chr(mod + 65)
+        num = (num - 1) // 26
+    return ''.join(reversed(letters))
+
+def rep_data_sh(df,wb_id,sh_name):
+    import gspread_dataframe as gd, gspread_formatting as f
+    """Replace data in sheet with dataframe, if sheet doesn't exists then create a new sheet"""
+    top_row_fmt = f.cellFormat(backgroundColor= f.color(1,1,1),#https://tug.org/pracjourn/2007-4/walden/color.pdf
+    textFormat=f.textFormat(bold=False, foregroundColor=f.color(0,0,0)))
+    if sh_name in str(open_wb(wb_id).worksheets()):
+        sheet = open_wb(wb_id).worksheet(sh_name)
+        f.format_cell_range(sheet, 'A1:{}{}'.format(num_to_col_letters(df.shape[1]),df.shape[0]), top_row_fmt) #remove formats
+    else:
+        sheet = open_wb(wb_id).add_worksheet(sh_name, df.shape[0],df.shape[1])
+    f.set_frozen(sheet, rows=0) #Remove top row formats and unfreeze top row
+    sheet.resize(rows=1) #delete all row
+    gd.set_with_dataframe(sheet, df) #insert data
+    sheet.set_basic_filter()
+    new_fmt =  top_row_fmt+ f.cellFormat(backgroundColor=f.color(1,3.5,454))
+    f.format_cell_range(sheet, 'A1:{}1'.format(num_to_col_letters(df.shape[1])), new_fmt)
