@@ -1,5 +1,5 @@
 #@auto-fold regex /./
-import json,os,boto3,psycopg2,click,re,shutil
+import json,os,boto3,psycopg2,shutil
 import gspread_dataframe as gd, gspread_formatting as f, gspread,requests as r
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import  datetime,timedelta
@@ -120,7 +120,7 @@ def mssql(sql,type):
 def gspread_con():
     """Create a gspread connection"""
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    credentials = ServiceAccountCredentials.from_json_keyfile_name(re_path()+'creds/svc-holmes.json', scope)
+    credentials = ServiceAccountCredentials.from_json_keyfile_name(root_fp+'creds/svc-holmes.json', scope)
     gc = gspread.authorize(credentials)
     return gc
 
@@ -181,18 +181,18 @@ def get_s3_file_version(bucket,filename):
 
             object = version.get()
             filename = path.rsplit('/')[-1]
-            with open('vers/{0}-{1}-{2}'.format(str(last_modified)[:10],version_id,filename), 'wb') as fout:
+            with open(root_fp+'{0}-{1}-{2}'.format(str(last_modified)[:10],version_id,filename), 'wb') as fout:
                 shutil.copyfileobj(object.get('Body'), fout)
         except:
             pass
 
 def delete_all_files(file_path):
-    for filename in os.listdir(file_path):
+    for filename in os.listdir(root_fp+file_path):
         try:
-            print("deleted " + os.path.join(file_path, filename))
-            os.remove(os.path.join(file_path, filename))
+            os.remove(root_fp+file_path+'/'+filename)
+            print("deleted " + root_fp+file_path+'/'+filename)
         except:
-            print("failed deleting " + os.path.join(file_path, filename))
+            print("failed deleting " + root_fp+file_path+'/'+filename)
             pass
 
 import importlib as ip, sys
