@@ -25,13 +25,13 @@ def main(service):
     if os.path.exists(ph.root_fp+'creds/token.pickle'):
         with open(ph.root_fp+'/creds/token.pickle', 'rb') as token:
             creds = pickle.load(token)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                ph.root_fp+'creds/client_secret.json', SCOPES)
-            creds = flow.run_local_server()
+    # if not creds or not creds.valid:
+    #     if creds and creds.expired and creds.refresh_token:
+    #         creds.refresh(Request())
+    #     else:
+    #         flow = InstalledAppFlow.from_client_secrets_file(
+    #             ph.root_fp+'creds/client_secret.json', SCOPES)
+    #         creds = flow.run_local_server()
         # Save the credentials for the next run
         with open(ph.root_fp+'creds/token.pickle', 'wb') as token:
             pickle.dump(creds, token)
