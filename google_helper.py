@@ -5,7 +5,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.http import MediaIoBaseDownload
-import base64,io,python_helper as ph
+import base64,io
 from email.mime.audio import MIMEAudio
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
@@ -16,6 +16,8 @@ from httplib2 import Http
 from apiclient import errors
 from apiclient.discovery import build
 from apiclient.http import MediaFileUpload
+from python_helpers import python_helper as ph
+
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://mail.google.com/','https://www.googleapis.com/auth/drive','https://www.googleapis.com/auth/calendar']
 
@@ -25,13 +27,13 @@ def main(service):
     if os.path.exists(ph.root_fp+'creds/token.pickle'):
         with open(ph.root_fp+'/creds/token.pickle', 'rb') as token:
             creds = pickle.load(token)
-    # if not creds or not creds.valid:
-    #     if creds and creds.expired and creds.refresh_token:
-    #         creds.refresh(Request())
-    #     else:
-    #         flow = InstalledAppFlow.from_client_secrets_file(
-    #             ph.root_fp+'creds/client_secret.json', SCOPES)
-    #         creds = flow.run_local_server()
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                ph.root_fp+'creds/client_secret.json', SCOPES)
+            creds = flow.run_local_server()
         # Save the credentials for the next run
         with open(ph.root_fp+'creds/token.pickle', 'wb') as token:
             pickle.dump(creds, token)
@@ -157,9 +159,9 @@ def gdrive_up(f_id,file_name,file_path):
     else:
         folder_id = f_id
         file_metadata = {
-            'name': name,
+            'name': file_name,
             'parents': [folder_id]}
-        media = MediaFileUpload(fp,
+        media = MediaFileUpload(file_path,
                                 #mimetype='image/png',
                                 resumable=True)
         file = main('drive').files().create(body=file_metadata,
