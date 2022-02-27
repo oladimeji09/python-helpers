@@ -7,7 +7,7 @@ from datetime import  datetime,timedelta
 if os.name == "nt":
     root_fp =  r"C:/Users/oolao/github/"
 elif os.name == "posix":
-    root_fp = r"/mnt/c/Users/oolao/github/"
+    root_fp = r"/home/oolao/github/"
 
 creds = json.load(open(root_fp+'creds/creds.json'))
 
