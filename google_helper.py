@@ -33,7 +33,7 @@ def main(service):
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 ph.root_fp+'creds/client_secret.json', SCOPES)
-            creds = flow.run_local_server()
+            creds = flow.run_local_server(port=4785)
         # Save the credentials for the next run
         with open(ph.root_fp+'creds/token.pickle', 'wb') as token:
             pickle.dump(creds, token)
